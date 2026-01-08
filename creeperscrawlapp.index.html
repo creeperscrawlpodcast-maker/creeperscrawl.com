@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Creepers Crawl Hang Out</title>
+    <style>
+        :root {
+            --bg-color: #0d1117;
+            --card-bg: #161b22;
+            --accent: #00ff41;
+            --text: #ffffff;
+            --error: #ff4757;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding-bottom: 50px;
+        }
+
+        /* Authentication Overlay */
+        #login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .login-box {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 15px;
+            border: 2px solid var(--accent);
+            text-align: center;
+            width: 85%;
+            max-width: 320px;
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.2);
+        }
+
+        input {
+            width: 100%;
+            margin: 10px 0;
+            padding: 12px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            color: var(--accent);
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+
+        .btn {
+            background: var(--accent);
+            color: black;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        /* Main App Header */
+        header {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 2px solid var(--accent);
+            margin-bottom: 20px;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        /* Radar Styling */
+        .radar-container {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            margin: 20px auto;
+            background: radial-gradient(circle, #002200 0%, #0d1117 70%);
+            border-radius: 50%;
+            border: 2px solid var(--accent);
+            overflow: hidden;
+        }
+
+        .radar-sweep {
+            position: absolute;
+            width: 50%;
+            height: 50%;
+            background: linear-gradient(45deg, rgba(0, 255, 65, 0.5) 0%, transparent 100%);
+            transform-origin: bottom right;
+            animation: sweep 2s infinite linear;
+        }
+
+        @keyframes sweep { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        /* Media & Map */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid #30363d;
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .map-grid {
+            height: 200px;
+            background: #051105;
+            background-image: linear-gradient(rgba(0, 255, 65, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 255, 65, 0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
+            position: relative;
+            border-radius: 10px;
+        }
+
+        .pin {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: var(--accent);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--accent);
+        }
+
+        /* Chat */
+        #chat-box {
+            height: 150px;
+            overflow-y: auto;
+            border: 1px solid #30363d;
+            padding: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .msg { padding: 8px; border-radius: 5px; font-size: 0.8rem; max-width: 80%; }
+        .inbound { background: #30363d; align-self: flex-start; }
+        .outbound { background: var(--accent); color: black; align-self: flex-end; }
+    </style>
+</head>
+<body>
+
+<div id="login-overlay">
+    <div class="login-box" id="auth-box">
+        <div id="login-form">
+            <h2 style="color: var(--accent);">ACCESS REQUIRED</h2>
+            <input type="text" id="admin-name" placeholder="Investigator Name">
+            <input type="password" id="admin-pass" placeholder="Passcode">
+            <button class="btn" onclick="checkLogin()">INITIALIZE</button>
+            <p style="font-size: 0.7rem; margin-top: 15px;">New? <a href="#" onclick="toggleAuth()" style="color: var(--accent);">Request Access</a></p>
+            <p id="login-error" style="color: var(--error); font-size: 0.7rem;"></p>
+        </div>
+
+        <div id="signup-form" style="display: none;">
+            <h2 style="color: var(--accent);">SIGN UP</h2>
+            <input type="text" id="reg-name" placeholder="Full Name">
+            <input type="text" id="reg-dept" placeholder="Department">
+            <button class="btn" onclick="requestAccess()">SEND REQUEST</button>
+            <p style="font-size: 0.7rem; margin-top: 15px;"><a href="#" onclick="toggleAuth()" style="color: var(--accent);">Back to Login</a></p>
+        </div>
+    </div>
+</div>
+
+<header>
+    <h1 style="color: var(--accent); margin: 0;">CREEPERS CRAWL</h1>
+    <span style="font-size: 0.8rem; letter-spacing: 2px;">INVESTIGATORS HANGOUT</span>
+</header>
+
+<div class="container">
+    <div class="card" style="text-align: center;">
+        <h3>Crawl Radar</h3>
+        <div class="radar-container"><div class="radar-sweep"></div></div>
+        <div id="distance-display" style="font-size: 1.5rem; color: var(--accent);">--- KM</div>
+        <button class="btn" onclick="getLocation()" style="width: auto;">Ping Location</button>
+    </div>
+
+    <div class="card">
+        <h3>Campus Map</h3>
+        <div class="map-grid">
+            <div class="pin" style="top: 40%; left: 50%;"></div> </div>
+    </div>
+
+    <div class="card">
+        <h3>Podcast Feed</h3>
+        <p style="font-size: 0.8rem; color: #888;">Latest Investigation</p>
+        <audio controls style="width: 100%;">
+            <source src="podcast.mp3" type="audio/mpeg">
+        </audio>
+    </div>
+
+    <div class="card">
+        <h3>Hangout Chat</h3>
+        <div id="chat-box">
+            <div class="msg inbound">System: Welcome, Investigator.</div>
+        </div>
+        <div style="display: flex; gap: 5px;">
+            <input type="text" id="chat-input" placeholder="Type..." style="margin: 0;">
+            <button class="btn" onclick="sendMsg()" style="width: auto; margin: 0;">Send</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Logic for Login
+    function checkLogin() {
+        const name = document.getElementById('admin-name').value;
+        const pass = document.getElementById('admin-pass').value;
+        if (name.toLowerCase() === "divine" && pass === "2026") {
+            document.getElementById('login-overlay').style.display = 'none';
+        } else {
+            document.getElementById('login-error').innerText = "INVALID CREDENTIALS";
+        }
+    }
+
+    function toggleAuth() {
+        const login = document.getElementById('login-form');
+        const signup = document.getElementById('signup-form');
+        login.style.display = login.style.display === "none" ? "block" : "none";
+        signup.style.display = signup.style.display === "none" ? "block" : "none";
+    }
+
+    function requestAccess() {
+        const name = document.getElementById('reg-name').value;
+        if(name) {
+            alert("Request sent for " + name + ". Awaiting Divine's approval.");
+            location.reload();
+        }
+    }
+
+    // Geolocation Logic
+    function getLocation() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition((pos) => {
+                // Approximate distance logic from earlier
+                document.getElementById('distance-display').innerText = "CALCULATING...";
+                setTimeout(() => { document.getElementById('distance-display').innerText = "1.24 KM"; }, 1500);
+            });
+        }
+    }
+
+    // Chat Logic
+    function sendMsg() {
+        const input = document.getElementById('chat-input');
+        const box = document.getElementById('chat-box');
+        if (input.value) {
+            const div = document.createElement('div');
+            div.className = 'msg outbound';
+            div.innerText = input.value;
+            box.appendChild(div);
+            input.value = "";
+            box.scrollTop = box.scrollHeight;
+        }
+    }
+</script>
+
+</body>
+</html>
